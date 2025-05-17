@@ -1,6 +1,12 @@
 #include <iostream>
 #include <conio.h>
 using namespace std;
+int i = 0;
+struct student
+{
+    string roll, name, clas;
+    float tot, obt, per;
+} s[10];
 
 void control_panel()
 {
@@ -14,36 +20,87 @@ void control_panel()
     cout << "\n\n Enter Your Choice : ";
 }
 
+void insert(student s[])
+{
+    system("cls"); // clear terminal
+    cout << "\n\n\t\t\tInsert Record";
+    cout << "\n\n Roll No. : ";
+    cin >> s[i].roll;
+    cout << "\n\t\tName : ";
+    cin >> s[i].name;
+    cout << "\n Class : ";
+    cin >> s[i].clas;
+    cout << "\n\t\t\tTotal Marks : ";
+    cin >> s[i].tot;
+    cout << "\n Obtained Marks : ";
+    cin >> s[i].obt;
+    s[i].per = (s[i].obt / s[i].tot) * 100;
+}
+
+void display(student s[])
+{
+    int c = 1;
+    system("cls"); // clear terminal
+    cout << "\n\n\t\t\t\tDisplay Record";
+    if (i > 0)
+    {
+
+        for (int a = 0; a < i; a++)
+        {
+            cout << "\n\n\n Student " << c;
+            cout << "\n\n Roll No. : " << s[a].roll;
+            cout << "\n\t\t Name : " << s[a].name;
+            cout << "\n Class : " << s[a].clas;
+            cout << "\n\t\t\t Total Marks : " << s[a].tot;
+            cout << "\n Obtained Marks : " << s[a].obt;
+            cout << "\n\t\t\t Percentage % : " << s[a].per;
+            c++;
+        }
+    }
+    else
+    {
+        cout << "\n\n Database is Empty....";
+    }
+}
+
 int main()
-{   
+{
     int choice;
-    p:
-    system("cls");
+    char x;
+p:
+    system("cls"); // clear console screen
     control_panel();
-    cin >> choice;
+    cin >> choice; // inputs
     switch (choice)
     {
-        case 1:
-            // Code to insert record
-            break;
-        case 2:
-            // Code to display record
-            break;
-        case 3: 
-            // Code to search record
-            break;
-        case 4:
-            // Code to update record
-            break;
-        case 5:
-            // Code to delete record
-            break;
-        case 6:
-            exit(0);
-        default:
-            cout << "\n\n Invalid Value...Please Try Again...";
+    case 1:
+        do
+        {
+            insert(s);
+            i++; // increase array index
+            cout << "\n\n Do You Want To Add Another Record (y,n) : ";
+            cin >> x;
+        } while (x == 'y');
+        break;
+
+    case 2:
+        display(s);
+        break;
+    case 3:
+        // Code to search record
+        break;
+    case 4:
+        // Code to update record
+        break;
+    case 5:
+        // Code to delete record
+        break;
+    case 6:
+        exit(0);
+    default:
+        cout << "\n\n Invalid Value...Please Try Again...";
     }
 
     getch();
-    goto p;
+    goto p; // loop jumps to p:
 }
