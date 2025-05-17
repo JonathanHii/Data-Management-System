@@ -63,6 +63,38 @@ void display(student s[])
     }
 }
 
+void search(student s[])
+{
+    int count = 0;
+    string roll;
+    system("cls");
+    cout << "\n\n\t\t\tSearch Record";
+    if (i > 0)
+    {
+        cout << "\n\n Roll No. For Search : ";
+        cin >> roll;
+        for (int a = 0; a < i; a++)
+        {
+            if (roll == s[a].roll)
+            {
+                cout << "\n\n Roll No. : " << s[a].roll;
+                cout << "\n\t\t Name : " << s[a].name;
+                cout << "\n Class : " << s[a].clas;
+                cout << "\n\t\t\t Total Marks : " << s[a].tot;
+                cout << "\n Obtained Marks : " << s[a].obt;
+                cout << "\n\t\t\t Percentage % : " << s[a].per;
+                count++;
+            }
+        }
+        if (count == 0)
+        {
+            cout << "\n\n Record Not Found...";
+        }
+    }
+    else
+        cout << "\n\n Data Base is Empty...";
+}
+
 int main()
 {
     int choice;
@@ -87,7 +119,7 @@ p:
         display(s);
         break;
     case 3:
-        // Code to search record
+        search(s);
         break;
     case 4:
         // Code to update record
