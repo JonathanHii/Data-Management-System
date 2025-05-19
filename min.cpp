@@ -1,5 +1,6 @@
 #include <iostream>
 #include <conio.h>
+
 using namespace std;
 int i = 0;
 struct student
@@ -121,7 +122,7 @@ void update(student s[])
                     cin >> s[a].tot;
                     cout << "\n Obtained Marks : ";
                     cin >> s[a].obt;
-                    s[i].per = (s[i].obt / s[i].tot) * 100;
+                    s[a].per = (s[a].obt / s[a].tot) * 100;
                     count++;
                 }
             }
@@ -134,6 +135,52 @@ void update(student s[])
     else
     {
         cout << "\n\n Database is Empty....";
+    }
+}
+
+void del(student s[])
+{
+    system("cls");
+    string roll, t_roll, t_name, t_class;
+    float t_tot, t_obt, t_per;
+    int count = 0;
+    cout << "\n\n\t\t\t\tDelete Record";
+    if (i > 0)
+    {
+        cout << "\n\n Roll No. For Delete : ";
+        cin >> roll;
+        for (int a = 0; a <= i; a++)
+        {
+            if (roll == s[a].roll)
+            {
+                for (int j = a; j < i; j++)
+                {
+                    t_roll = s[j + 1].roll;
+                    t_name = s[j + 1].name;
+                    t_class = s[j + 1].clas;
+                    t_tot = s[j + 1].tot;
+                    t_obt = s[j + 1].obt;
+                    t_per = s[j + 1].per;
+                    s[j].roll = t_roll;
+                    s[j].name = t_name;
+                    s[j].clas = t_class;
+                    s[j].tot = t_tot;
+                    s[j].obt = t_obt;
+                    s[j].per = t_per;
+                }
+                cout << "\n\n Record is Deleted....";
+                i--;
+                count++;
+            }
+        }
+        if (count == 0)
+        {
+            cout << "\n\n Record Not Found...";
+        }
+    }
+    else
+    {
+        cout << "\n\n Database is empty";
     }
 }
 
@@ -168,7 +215,7 @@ int main()
             update(s);
             break;
         case 5:
-            // Code to delete record
+            del(s);
             break;
         case 6:
             exit(0);
