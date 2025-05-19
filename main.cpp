@@ -1,5 +1,7 @@
 #include <iostream>
 #include <conio.h>
+#include <sqlite3.h>
+sqlite3* db;
 
 using namespace std;
 int i = 0;
