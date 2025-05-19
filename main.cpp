@@ -1,9 +1,46 @@
 #include <iostream>
 #include <conio.h>
 #include <sqlite3.h>
-sqlite3* db;
 
 using namespace std;
+sqlite3 *db;
+
+void openDatabase()
+{
+    if (sqlite3_open("students.db", &db))
+    {
+        cerr << "Can't open database: " << sqlite3_errmsg(db) << endl;
+        exit(1);
+    }
+}
+
+void closeDatabase()
+{
+    sqlite3_close(db);
+}
+
+void createTable()
+{
+    const char *sql =
+        "CREATE TABLE IF NOT EXISTS students ("
+        "roll TEXT PRIMARY KEY, "
+        "name TEXT NOT NULL, "
+        "class TEXT NOT NULL, "
+        "total REAL NOT NULL, " // REAL is floating point numbers
+        "obtained REAL NOT NULL, "
+        "percentage REAL NOT NULL);";
+
+    char *errMsg = 0;
+
+    int rc = sqlite3_exec(db, sql, 0, 0, &errMsg); // executes command.
+
+    if (rc != SQLITE_OK)
+    { // Not Successful result
+        cerr << "SQL error: " << errMsg << endl;
+        sqlite3_free(errMsg);
+    }
+}
+
 int i = 0;
 struct student
 {
