@@ -46,7 +46,7 @@ struct student
 {
     string roll, name, clas;
     float tot, obt, per;
-} s[10];
+};
 
 void control_panel()
 {
@@ -60,47 +60,90 @@ void control_panel()
     cout << "\n\n Enter Your Choice : ";
 }
 
-void insert(student s[])
+void insert(student& s)
 {
     system("cls"); // clear terminal
     cout << "\n\n\t\t\tInsert Record";
     cout << "\n\n Roll No. : ";
-    cin >> s[i].roll;
+    cin >> s.roll;
     cout << "\n\t\tName : ";
-    cin >> s[i].name;
+    cin >> s.name;
     cout << "\n Class : ";
-    cin >> s[i].clas;
+    cin >> s.clas;
     cout << "\n\t\t\tTotal Marks : ";
-    cin >> s[i].tot;
+    cin >> s.tot;
     cout << "\n Obtained Marks : ";
-    cin >> s[i].obt;
-    s[i].per = (s[i].obt / s[i].tot) * 100;
-}
+    cin >> s.obt;
+    s.per = (s.obt / s.tot) * 100;
 
-void display(student s[])
-{
-    int c = 1;
-    system("cls"); // clear terminal
-    cout << "\n\n\t\t\t\tDisplay Record";
-    if (i > 0)
+    // Prepare SQL Insert statement
+    const char* sql = "INSERT INTO students (roll, name, class, total, obtained, percentage) VALUES (?, ?, ?, ?, ?, ?);";
+    sqlite3_stmt* stmt;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK)
     {
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
 
-        for (int a = 0; a < i; a++)
-        {
-            cout << "\n\n\n Student " << c;
-            cout << "\n\n Roll No. : " << s[a].roll;
-            cout << "\n\t\t Name : " << s[a].name;
-            cout << "\n Class : " << s[a].clas;
-            cout << "\n\t\t\t Total Marks : " << s[a].tot;
-            cout << "\n Obtained Marks : " << s[a].obt;
-            cout << "\n\t\t\t Percentage % : " << s[a].per;
-            c++;
-        }
+    // Bind values to statement
+    sqlite3_bind_text(stmt, 1, s.roll.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, s.name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, s.clas.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 4, s.tot);
+    sqlite3_bind_double(stmt, 5, s.obt);
+    sqlite3_bind_double(stmt, 6, s.per);
+
+    // Execute the statement
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        cerr << "Insert failed: " << sqlite3_errmsg(db) << endl;
     }
     else
     {
+        cout << "\nRecord inserted successfully.";
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+
+void display()
+{
+    system("cls"); // clear terminal
+    cout << "\n\n\t\t\t\tDisplay Records\n";
+
+    const char* sql = "SELECT roll, name, class, total, obtained, percentage FROM students;";
+    sqlite3_stmt* stmt;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    int recordCount = 0;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
+    {
+        recordCount++;
+        cout << "\n\n Student " << recordCount;
+        cout << "\n\n Roll No. : " << reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        cout << "\n\t\t Name : " << reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        cout << "\n Class : " << reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        cout << "\n\t\t\t Total Marks : " << sqlite3_column_double(stmt, 3);
+        cout << "\n Obtained Marks : " << sqlite3_column_double(stmt, 4);
+        cout << "\n\t\t\t Percentage % : " << sqlite3_column_double(stmt, 5);
+    }
+
+    if (recordCount == 0)
+    {
         cout << "\n\n Database is Empty....";
     }
+
+    sqlite3_finalize(stmt);
 }
 
 void search(student s[])
