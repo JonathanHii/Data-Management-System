@@ -19,7 +19,8 @@ public:
 
     Student() = default;
 
-    Student(string r, string n, string c, float tot, float obt) : roll(r), name(n), clas(c), total(tot), obtained(obt)
+    Student(string r, string n, string c, float tot, float obt)
+        : roll(r), name(n), clas(c), total(tot), obtained(obt)
     {
         percentage = (total != 0) ? (obtained / total) * 100.0f : 0;
     }
@@ -33,7 +34,7 @@ private:
     sqlite3 *db;
 
 public:
-    Database() : db(nullptr) {}
+    Database() : db(nullptr) {} // set private db default to nullptr
 
     bool open(const string &dbName)
     {
@@ -49,7 +50,7 @@ public:
     {
         if (db)
         {
-            sqlite3_close(db);
+            sqlite3_close(db); // frees recourses
             db = nullptr;
         }
     }
@@ -62,11 +63,11 @@ public:
             "name TEXT NOT NULL, "
             "class TEXT NOT NULL, "
             "total REAL NOT NULL, "
-            "obtained REAL NOT NULL, "
+            "obtained REAL NOT NULL, " // REAL is float numbers
             "percentage REAL NOT NULL);";
 
         char *errMsg = nullptr;
-        int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+        int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg); // executes sql code
         if (rc != SQLITE_OK)
         {
             cerr << "SQL error: " << errMsg << endl;
@@ -91,7 +92,9 @@ public:
 
     bool insert(const Student &s)
     {
-        const char *sql = "INSERT INTO students (roll, name, class, total, obtained, percentage) VALUES (?, ?, ?, ?, ?, ?);";
+        const char *sql =
+            "INSERT INTO students (roll, name, class, total, obtained, percentage) "
+            "VALUES (?, ?, ?, ?, ?, ?);";
 
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
@@ -121,7 +124,10 @@ public:
 
     void displayAll()
     {
-        const char *sql = "SELECT roll, name, class, total, obtained, percentage FROM students;";
+        const char *sql =
+            "SELECT roll, name, class, total, obtained, percentage "
+            "FROM students;";
+
         sqlite3_stmt *stmt;
 
         int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
@@ -154,7 +160,11 @@ public:
 
     bool search(const string &roll, Student &s)
     {
-        const char *sql = "SELECT roll, name, class, total, obtained, percentage FROM students WHERE roll = ?;";
+
+        const char *sql =
+            "SELECT roll, name, class, total, obtained, percentage "
+            "FROM students WHERE roll = ?;";
+
         sqlite3_stmt *stmt;
 
         int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
@@ -184,8 +194,10 @@ public:
 
     bool update(const string &oldRoll, const Student &newStudent)
     {
+
         const char *sql =
-            "UPDATE students SET roll = ?, name = ?, class = ?, total = ?, obtained = ?, percentage = ? WHERE roll = ?;";
+            "UPDATE students SET roll = ?, name = ?, class = ?, total = ?, obtained = ?, percentage = ? "
+            "WHERE roll = ?;";
 
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
