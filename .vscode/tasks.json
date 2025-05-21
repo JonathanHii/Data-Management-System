@@ -11,7 +11,7 @@
                 "-g",
                 "${file}",
                 "-o",
-                "${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe",
+                "${workspaceFolder}\\${fileBasenameNoExtension}.exe",
                 "-lsqlite3"
             ],
             "options": {
