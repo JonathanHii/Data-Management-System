@@ -1,381 +1,447 @@
 #include <iostream>
-#include <conio.h>
+#include <string>
 #include <sqlite3.h>
+#include <conio.h>
 
 using namespace std;
-sqlite3 *db;
 
-void openDatabase()
+// Model
+//-------------------
+class Student
 {
-    if (sqlite3_open("students.db", &db))
+public:
+    string roll;
+    string name;
+    string clas;
+    float total;
+    float obtained;
+    float percentage;
+
+    Student() = default;
+
+    Student(string r, string n, string c, float tot, float obt) : roll(r), name(n), clas(c), total(tot), obtained(obt)
     {
-        cerr << "Can't open database: " << sqlite3_errmsg(db) << endl;
-        exit(1);
+        percentage = (total != 0) ? (obtained / total) * 100.0f : 0;
     }
-}
-
-void closeDatabase()
-{
-    sqlite3_close(db);
-}
-
-void createTable()
-{
-    const char *sql =
-        "CREATE TABLE IF NOT EXISTS students ("
-        "roll TEXT PRIMARY KEY, "
-        "name TEXT NOT NULL, "
-        "class TEXT NOT NULL, "
-        "total REAL NOT NULL, " // REAL is floating point numbers
-        "obtained REAL NOT NULL, "
-        "percentage REAL NOT NULL);";
-
-    char *errMsg = 0;
-
-    int rc = sqlite3_exec(db, sql, 0, 0, &errMsg); // executes command.
-
-    if (rc != SQLITE_OK)
-    { // Not Successful result
-        cerr << "SQL error: " << errMsg << endl;
-        sqlite3_free(errMsg);
-    }
-}
-
-int i = 0;
-struct student
-{
-    string roll, name, clas;
-    float tot, obt, per;
 };
 
-void control_panel()
+// Database Handler
+//-------------------
+class Database
 {
-    cout << "\n\n\n\t\t\tControl Panel";
-    cout << "\n 1. Insert Record";
-    cout << "\n 2. Display Record";
-    cout << "\n 3. Search Record";
-    cout << "\n 4. Update Record";
-    cout << "\n 5. Delete Record";
-    cout << "\n 6. Exit";
-    cout << "\n\n Enter Your Choice : ";
-}
+private:
+    sqlite3 *db;
 
-void insert(student &s)
-{
-    system("cls"); // clear terminal
-    cout << "\n\n\t\t\tInsert Record";
-    cout << "\n\n Roll No. : ";
-    cin >> s.roll;
-    cout << "\n\t\tName : ";
-    cin >> s.name;
-    cout << "\n Class : ";
-    cin >> s.clas;
-    cout << "\n\t\t\tTotal Marks : ";
-    cin >> s.tot;
-    cout << "\n Obtained Marks : ";
-    cin >> s.obt;
-    s.per = (s.obt / s.tot) * 100;
+public:
+    Database() : db(nullptr) {}
 
-    // Prepare SQL Insert statement
-    const char *sql =
-        "INSERT INTO students "
-        "(roll, name, class, total, obtained, percentage) "
-        "VALUES (?, ?, ?, ?, ?, ?);";
-
-    sqlite3_stmt *stmt; // sql c api pointer to the object
-
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL); // compiles sql into prepared statement
-    if (rc != SQLITE_OK)                                   // if not sucessful result
+    bool open(const string &dbName)
     {
-        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
-        return;
-    }
-
-    // Bind values to statement
-    sqlite3_bind_text(stmt, 1, s.roll.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, s.name.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, s.clas.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 4, s.tot);
-    sqlite3_bind_double(stmt, 5, s.obt);
-    sqlite3_bind_double(stmt, 6, s.per);
-
-    rc = sqlite3_step(stmt); // Execute the statement
-    if (rc != SQLITE_DONE)
-    {
-        cerr << "Insert failed: " << sqlite3_errmsg(db) << endl;
-    }
-    else
-    {
-        cout << "\nRecord inserted successfully.";
-    }
-
-    sqlite3_finalize(stmt); // free recourses
-}
-
-void display()
-{
-    system("cls"); // clear terminal
-    cout << "\n\n\t\t\t\tDisplay Records\n";
-
-    const char *sql =
-        "SELECT roll, name, class, total, obtained, percentage "
-        "FROM students;";
-    sqlite3_stmt *stmt;
-
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
-        return;
-    }
-
-    int recordCount = 0;
-    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
-    {
-        recordCount++;
-        cout << "\n\n Student " << recordCount;
-        cout << "\n\n Roll No. : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-        cout << "\n\t\t Name : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-        cout << "\n Class : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-        cout << "\n\t\t\t Total Marks : " << sqlite3_column_double(stmt, 3);
-        cout << "\n Obtained Marks : " << sqlite3_column_double(stmt, 4);
-        cout << "\n\t\t\t Percentage % : " << sqlite3_column_double(stmt, 5);
-    }
-
-    if (recordCount == 0)
-    {
-        cout << "\n\n Database is Empty....";
-    }
-
-    sqlite3_finalize(stmt);
-}
-
-void search()
-{
-    int count = 0;
-    string roll;
-    system("cls");
-    cout << "\n\n\t\t\tSearch Record";
-
-    cout << "\n\n Roll No. For Search : ";
-    cin >> roll;
-
-    const char *sql =
-        "SELECT roll, name, class, total, obtained, percentage "
-        "FROM students "
-        "WHERE roll = ?;";
-
-    sqlite3_stmt *stmt;
-
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
-        return;
-    }
-
-    // Bind roll number parameter
-    sqlite3_bind_text(stmt, 1, roll.c_str(), -1, SQLITE_TRANSIENT);
-
-    // Step through results
-    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
-    {
-        cout << "\n\n Roll No. : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-        cout << "\n\t\t Name : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-        cout << "\n Class : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-        cout << "\n\t\t\t Total Marks : " << sqlite3_column_double(stmt, 3);
-        cout << "\n Obtained Marks : " << sqlite3_column_double(stmt, 4);
-        cout << "\n\t\t\t Percentage % : " << sqlite3_column_double(stmt, 5);
-        count++;
-    }
-
-    if (count == 0)
-    {
-        cout << "\n\n Record Not Found...";
-    }
-
-    sqlite3_finalize(stmt);
-}
-
-void update()
-{
-    system("cls");
-    string roll;
-    int count = 0;
-
-    cout << "\n\n\t\t\t\tUpdate Record";
-    cout << "\n\n Roll No. For Update : ";
-    cin >> roll;
-
-    // First check if the record exists
-    const char *check_sql =
-        "SELECT COUNT(*) "
-        "FROM students "
-        "WHERE roll = ?;";
-
-    sqlite3_stmt *check_stmt;
-
-    int rc = sqlite3_prepare_v2(db, check_sql, -1, &check_stmt, NULL);
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
-        return;
-    }
-
-    sqlite3_bind_text(check_stmt, 1, roll.c_str(), -1, SQLITE_TRANSIENT);
-
-    rc = sqlite3_step(check_stmt);
-    int exists = 0;
-    if (rc == SQLITE_ROW)
-    {
-        exists = sqlite3_column_int(check_stmt, 0);
-    }
-    sqlite3_finalize(check_stmt);
-
-    if (!exists)
-    {
-        cout << "\n\n Record Not Found....";
-        return;
-    }
-
-    // Get new details
-    string new_roll, name, clas;
-    float tot, obt, per;
-
-    cout << "\n\n New Roll No. : ";
-    cin >> new_roll;
-    cout << "\n\t\tName : ";
-    cin >> name;
-    cout << "\n Class : ";
-    cin >> clas;
-    cout << "\n\t\tTotal Marks : ";
-    cin >> tot;
-    cout << "\n Obtained Marks : ";
-    cin >> obt;
-    per = (obt / tot) * 100;
-
-    // Prepare update SQL
-    const char *update_sql =
-        "UPDATE students "
-        "SET roll = ?, name = ?, class = ?, total = ?, obtained = ?, percentage = ? "
-        "WHERE roll = ?;";
-    sqlite3_stmt *update_stmt;
-
-    rc = sqlite3_prepare_v2(db, update_sql, -1, &update_stmt, NULL);
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Failed to prepare update statement: " << sqlite3_errmsg(db) << endl;
-        return;
-    }
-
-    // Bind parameters
-    sqlite3_bind_text(update_stmt, 1, new_roll.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(update_stmt, 2, name.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(update_stmt, 3, clas.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(update_stmt, 4, tot);
-    sqlite3_bind_double(update_stmt, 5, obt);
-    sqlite3_bind_double(update_stmt, 6, per);
-    sqlite3_bind_text(update_stmt, 7, roll.c_str(), -1, SQLITE_TRANSIENT);
-
-    rc = sqlite3_step(update_stmt);
-    if (rc != SQLITE_DONE)
-    {
-        cerr << "Update failed: " << sqlite3_errmsg(db) << endl;
-    }
-    else
-    {
-        cout << "\n\n Record updated successfully.";
-    }
-
-    sqlite3_finalize(update_stmt);
-}
-
-void del()
-{
-    system("cls");
-    string roll;
-    int count = 0;
-
-    cout << "\n\n\t\t\t\tDelete Record";
-    cout << "\n\n Roll No. For Delete : ";
-    cin >> roll;
-
-    // Prepare delete SQL
-    const char *sql = "DELETE FROM students WHERE roll = ?;";
-    sqlite3_stmt *stmt;
-
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, roll.c_str(), -1, SQLITE_TRANSIENT);
-
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE)
-    {
-        cerr << "Delete failed: " << sqlite3_errmsg(db) << endl;
-    }
-    else
-    {
-        if (sqlite3_changes(db) > 0)
+        if (sqlite3_open(dbName.c_str(), &db) != SQLITE_OK)
         {
-            cout << "\n\n Record is Deleted....";
+            cerr << "Can't open database: " << sqlite3_errmsg(db) << endl;
+            return false;
+        }
+        return true;
+    }
+
+    void close()
+    {
+        if (db)
+        {
+            sqlite3_close(db);
+            db = nullptr;
+        }
+    }
+
+    bool createTable()
+    {
+        const char *sql =
+            "CREATE TABLE IF NOT EXISTS students ("
+            "roll TEXT PRIMARY KEY, "
+            "name TEXT NOT NULL, "
+            "class TEXT NOT NULL, "
+            "total REAL NOT NULL, "
+            "obtained REAL NOT NULL, "
+            "percentage REAL NOT NULL);";
+
+        char *errMsg = nullptr;
+        int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+        if (rc != SQLITE_OK)
+        {
+            cerr << "SQL error: " << errMsg << endl;
+            sqlite3_free(errMsg);
+            return false;
+        }
+        return true;
+    }
+
+    sqlite3 *getConnection() { return db; }
+};
+
+// Student Data Access
+//-------------------
+class StudentService
+{
+private:
+    Database &database;
+
+public:
+    explicit StudentService(Database &db) : database(db) {}
+
+    bool insert(const Student &s)
+    {
+        const char *sql = "INSERT INTO students (roll, name, class, total, obtained, percentage) VALUES (?, ?, ?, ?, ?, ?);";
+
+        sqlite3_stmt *stmt;
+        int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK)
+        {
+            cerr << "Failed to prepare statement: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, s.roll.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, s.name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, s.clas.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 4, s.total);
+        sqlite3_bind_double(stmt, 5, s.obtained);
+        sqlite3_bind_double(stmt, 6, s.percentage);
+
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        if (rc != SQLITE_DONE)
+        {
+            cerr << "Insert failed: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return false;
+        }
+        return true;
+    }
+
+    void displayAll()
+    {
+        const char *sql = "SELECT roll, name, class, total, obtained, percentage FROM students;";
+        sqlite3_stmt *stmt;
+
+        int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK)
+        {
+            cerr << "Failed to prepare statement: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return;
+        }
+
+        int count = 0;
+        while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
+        {
+            count++;
+            cout << "\n\n Student " << count;
+            cout << "\n Roll No. : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+            cout << "\n Name : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+            cout << "\n Class : " << reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+            cout << "\n Total Marks : " << sqlite3_column_double(stmt, 3);
+            cout << "\n Obtained Marks : " << sqlite3_column_double(stmt, 4);
+            cout << "\n Percentage % : " << sqlite3_column_double(stmt, 5);
+        }
+
+        if (count == 0)
+        {
+            cout << "\n\n Database is Empty....";
+        }
+
+        sqlite3_finalize(stmt);
+    }
+
+    bool search(const string &roll, Student &s)
+    {
+        const char *sql = "SELECT roll, name, class, total, obtained, percentage FROM students WHERE roll = ?;";
+        sqlite3_stmt *stmt;
+
+        int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK)
+        {
+            cerr << "Failed to prepare statement: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, roll.c_str(), -1, SQLITE_TRANSIENT);
+
+        rc = sqlite3_step(stmt);
+        if (rc == SQLITE_ROW)
+        {
+            s.roll = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+            s.name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+            s.clas = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+            s.total = static_cast<float>(sqlite3_column_double(stmt, 3));
+            s.obtained = static_cast<float>(sqlite3_column_double(stmt, 4));
+            s.percentage = static_cast<float>(sqlite3_column_double(stmt, 5));
+            sqlite3_finalize(stmt);
+            return true;
+        }
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    bool update(const string &oldRoll, const Student &newStudent)
+    {
+        const char *sql =
+            "UPDATE students SET roll = ?, name = ?, class = ?, total = ?, obtained = ?, percentage = ? WHERE roll = ?;";
+
+        sqlite3_stmt *stmt;
+        int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK)
+        {
+            cerr << "Failed to prepare update statement: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, newStudent.roll.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, newStudent.name.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, newStudent.clas.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 4, newStudent.total);
+        sqlite3_bind_double(stmt, 5, newStudent.obtained);
+        sqlite3_bind_double(stmt, 6, newStudent.percentage);
+        sqlite3_bind_text(stmt, 7, oldRoll.c_str(), -1, SQLITE_TRANSIENT);
+
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        if (rc != SQLITE_DONE)
+        {
+            cerr << "Update failed: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return false;
+        }
+        return true;
+    }
+
+    bool remove(const string &roll)
+    {
+        const char *sql = "DELETE FROM students WHERE roll = ?;";
+        sqlite3_stmt *stmt;
+
+        int rc = sqlite3_prepare_v2(database.getConnection(), sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK)
+        {
+            cerr << "Failed to prepare statement: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return false;
+        }
+
+        sqlite3_bind_text(stmt, 1, roll.c_str(), -1, SQLITE_TRANSIENT);
+
+        rc = sqlite3_step(stmt);
+        int changes = sqlite3_changes(database.getConnection());
+        sqlite3_finalize(stmt);
+
+        if (rc != SQLITE_DONE)
+        {
+            cerr << "Delete failed: " << sqlite3_errmsg(database.getConnection()) << endl;
+            return false;
+        }
+        return changes > 0;
+    }
+};
+
+// UI and Control Panel
+//-------------------
+class UI
+{
+private:
+    StudentService &service;
+
+    void clearScreen()
+    {
+        system("cls");
+    }
+
+    void pause()
+    {
+        cout << "\nPress any key to continue...";
+        getch();
+    }
+
+    void insertRecord()
+    {
+        char choice;
+        do
+        {
+            clearScreen();
+            cout << "\n\n\t\t\tInsert Record\n";
+            Student s;
+
+            cout << " Roll No. : ";
+            cin >> s.roll;
+            cout << " Name : ";
+            cin >> s.name;
+            cout << " Class : ";
+            cin >> s.clas;
+            cout << " Total Marks : ";
+            cin >> s.total;
+            cout << " Obtained Marks : ";
+            cin >> s.obtained;
+            s.percentage = (s.total != 0) ? (s.obtained / s.total) * 100.0f : 0;
+
+            if (service.insert(s))
+            {
+                cout << "\nRecord inserted successfully.";
+            }
+
+            cout << "\n\n Do you want to add another record (y/n)? ";
+            cin >> choice;
+        } while (choice == 'y' || choice == 'Y');
+    }
+
+    void displayRecords()
+    {
+        clearScreen();
+        cout << "\n\n\t\t\tDisplay Records\n";
+        service.displayAll();
+        pause();
+    }
+
+    void searchRecord()
+    {
+        clearScreen();
+        cout << "\n\n\t\t\tSearch Record\n";
+        string roll;
+        cout << " Roll No. for search: ";
+        cin >> roll;
+
+        Student s;
+        if (service.search(roll, s))
+        {
+            cout << "\nRoll No. : " << s.roll;
+            cout << "\nName : " << s.name;
+            cout << "\nClass : " << s.clas;
+            cout << "\nTotal Marks : " << s.total;
+            cout << "\nObtained Marks : " << s.obtained;
+            cout << "\nPercentage : " << s.percentage;
         }
         else
         {
-            cout << "\n\n Record Not Found...";
+            cout << "\nRecord not found.";
         }
+        pause();
     }
 
-    sqlite3_finalize(stmt);
-}
+    void updateRecord()
+    {
+        clearScreen();
+        cout << "\n\n\t\t\tUpdate Record\n";
+        string oldRoll;
+        cout << "Roll No. to update: ";
+        cin >> oldRoll;
 
+        Student existingStudent;
+        if (!service.search(oldRoll, existingStudent))
+        {
+            cout << "\nRecord not found.";
+            pause();
+            return;
+        }
+
+        Student newStudent;
+
+        cout << "\nEnter new details:\n";
+        cout << "New Roll No. : ";
+        cin >> newStudent.roll;
+        cout << "Name : ";
+        cin >> newStudent.name;
+        cout << "Class : ";
+        cin >> newStudent.clas;
+        cout << "Total Marks : ";
+        cin >> newStudent.total;
+        cout << "Obtained Marks : ";
+        cin >> newStudent.obtained;
+        newStudent.percentage = (newStudent.total != 0) ? (newStudent.obtained / newStudent.total) * 100.0f : 0;
+
+        if (service.update(oldRoll, newStudent))
+        {
+            cout << "\nRecord updated successfully.";
+        }
+        pause();
+    }
+
+    void deleteRecord()
+    {
+        clearScreen();
+        cout << "\n\n\t\t\tDelete Record\n";
+        string roll;
+        cout << "Roll No. to delete: ";
+        cin >> roll;
+
+        if (service.remove(roll))
+        {
+            cout << "\nRecord deleted successfully.";
+        }
+        else
+        {
+            cout << "\nRecord not found.";
+        }
+        pause();
+    }
+
+public:
+    explicit UI(StudentService &s) : service(s) {}
+
+    void controlPanel()
+    {
+        int choice;
+        while (true)
+        {
+            clearScreen();
+            cout << "\n\n\t\t\tControl Panel";
+            cout << "\n1. Insert Record";
+            cout << "\n2. Display Records";
+            cout << "\n3. Search Record";
+            cout << "\n4. Update Record";
+            cout << "\n5. Delete Record";
+            cout << "\n6. Exit";
+            cout << "\n\nEnter your choice: ";
+            cin >> choice;
+
+            switch (choice)
+            {
+            case 1:
+                insertRecord();
+                break;
+            case 2:
+                displayRecords();
+                break;
+            case 3:
+                searchRecord();
+                break;
+            case 4:
+                updateRecord();
+                break;
+            case 5:
+                deleteRecord();
+                break;
+            case 6:
+                return;
+            default:
+                cout << "\nInvalid choice. Please try again.";
+                pause();
+            }
+        }
+    }
+};
+
+// Main Function
+//-------------------
 int main()
 {
-    openDatabase();
-    createTable();
-
-    int choice;
-    char x;
-    while (true) // replaces goto and label
+    Database db;
+    if (!db.open("students.db"))
     {
-        system("cls"); // clear console screen
-        control_panel();
-        cin >> choice; // inputs
-        switch (choice)
-        {
-        case 1:
-            do
-            {
-                student s;
-                insert(s);
-                cout << "\n\n Do You Want To Add Another Record (y,n) : ";
-                cin >> x;
-            } while (x == 'y');
-            break;
-
-        case 2:
-            display();
-            break;
-        case 3:
-            search();
-            break;
-        case 4:
-            update();
-            break;
-        case 5:
-            del();
-            break;
-        case 6:
-            closeDatabase();
-            exit(0);
-        default:
-            cout << "\n\n Invalid Value...Please Try Again...";
-        }
-
-        getch();
+        return 1;
     }
+    db.createTable();
+
+    StudentService service(db);
+    UI ui(service);
+
+    ui.controlPanel();
+
+    db.close();
+    return 0;
 }
