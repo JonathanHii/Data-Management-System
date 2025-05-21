@@ -16,9 +16,9 @@ A simple student record management system with plans for SQLite integration, mul
 
 ## Roadmap
 
-- [ ] Implement SQLite database functionality
-- [ ] Add multithreading for auto-backup and statistics
-- [ ] Develop automated tests for data handling
+- [x] Implement SQLite database functionality
+- [ ] Add multithreading for auto-backup and statistics window
+- [ ] Develop Simulated tests for data handling
 
 ---
 *Work in progress.*
