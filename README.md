@@ -34,7 +34,7 @@ A simple C++ student record management system with SQLite database integration.
 - The program is designed for Windows (uses `conio.h` and `system("cls")`).
 - To run on another computer, copy:
   - The `.exe` file
-  - `sqlite3.dll` (if dynamically linked)
+  - `sqlite3.dll` 
   - `students.db` (if you want to preserve existing data)
 
 ## Roadmap
