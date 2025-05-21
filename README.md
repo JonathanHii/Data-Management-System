@@ -26,7 +26,7 @@ A simple C++ student record management system with SQLite database integration.
 
 ## How to Run
 
-- Run `DataManagementSystem.exe` from the command line.
+- Run `main.exe` from the command line.
 - Follow the on-screen menu to manage student records.
 
 ## Portability
