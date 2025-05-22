@@ -3,6 +3,10 @@
 #include <sqlite3.h>
 #include <conio.h>
 
+#include <thread>
+#include <chrono>
+#include <filesystem>
+
 using namespace std;
 
 // Model
@@ -78,6 +82,21 @@ public:
     }
 
     sqlite3 *getConnection() { return db; }
+
+    bool backup(const std::string &backupFileName)
+    {
+        try
+        {
+            // Using std::filesystem
+            std::filesystem::copy_file("students.db", backupFileName, std::filesystem::copy_options::overwrite_existing);
+            return true;
+        }
+        catch (std::filesystem::filesystem_error &e)
+        {
+            cerr << "Backup failed: " << e.what() << endl;
+            return false;
+        }
+    }
 };
 
 // Student Data Access
@@ -90,7 +109,7 @@ private:
 public:
     explicit StudentService(Database &db) : database(db) {}
 
-    bool insert(const Student &s)
+    bool insert(const Student &s) // takes a struct and inserts it into db
     {
         const char *sql =
             "INSERT INTO students (roll, name, class, total, obtained, percentage) "
@@ -158,7 +177,7 @@ public:
         sqlite3_finalize(stmt);
     }
 
-    bool search(const string &roll, Student &s)
+    bool search(const string &roll, Student &s) // takes roll number and a student class than updates that struct with info
     {
 
         const char *sql =
@@ -192,7 +211,7 @@ public:
         return false;
     }
 
-    bool update(const string &oldRoll, const Student &newStudent)
+    bool update(const string &oldRoll, const Student &newStudent) // tempoary student class
     {
 
         const char *sql =
@@ -226,7 +245,7 @@ public:
         return true;
     }
 
-    bool remove(const string &roll)
+    bool remove(const string &roll) // Takes a struct
     {
         const char *sql = "DELETE FROM students WHERE roll = ?;";
         sqlite3_stmt *stmt;
@@ -251,7 +270,12 @@ public:
         }
         return changes > 0;
     }
+
+    Database &getDatabase() { return database; } // getter for database class
 };
+
+// Function declarations
+void runBackup(Database &db);
 
 // UI and Control Panel
 //-------------------
@@ -407,7 +431,9 @@ public:
             cout << "\n3. Search Record";
             cout << "\n4. Update Record";
             cout << "\n5. Delete Record";
-            cout << "\n6. Exit";
+            cout << "\n6. Backup Database";
+            cout << "\n7. Exit";
+
             cout << "\n\nEnter your choice: ";
             cin >> choice;
 
@@ -429,7 +455,17 @@ public:
                 deleteRecord();
                 break;
             case 6:
+            {
+                // Start backup in a separate thread
+                std::thread backupThread(runBackup, std::ref(service.getDatabase()));
+                backupThread.detach(); // Let the backup run independently
+                cout << "Backup started in the background.\n";
+                pause();
+                break;
+            }
+            case 7:
                 return;
+
             default:
                 cout << "\nInvalid choice. Please try again.";
                 pause();
@@ -437,6 +473,32 @@ public:
         }
     }
 };
+
+// Backup function
+void runBackup(Database &db)
+{
+    // For example, create a timestamped backup file name
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    char buffer[64];
+    std::strftime(buffer, sizeof(buffer), "backup_%Y%m%d_%H%M%S.db", &tm);
+
+    std::string backupDir = "backup/";
+    std::filesystem::create_directories(backupDir); // Create folder if it doesn't exist
+
+    std::string fullBackupPath = backupDir + std::string(buffer);
+
+    cout << "\nStarting backup to file: " << buffer << endl;
+
+    if (db.backup(fullBackupPath))
+    {
+        cout << "Backup completed successfully.\n";
+    }
+    else
+    {
+        cout << "Backup failed.\n";
+    }
+}
 
 // Main Function
 //-------------------
