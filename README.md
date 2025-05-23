@@ -13,7 +13,7 @@ A simple C++ student record management system with SQLite database integration.
 - **Role-Based Access Control:**  
   User login (admin/teacher/student) with different permissions, demonstrating security and multi-user design.
 - **REST API Server:**  
-  Exposes the database as a REST API (using C++ frameworks like Pistache or Crow), making the project accessible to web and mobile apps. The server runs on a separate thread.
+  Exposes the database as a REST API, making the project accessible to web and mobile apps. The server runs on a separate thread.
 
 ## How to Build
 
