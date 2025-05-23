@@ -1,7 +1,6 @@
 # Data Management System
 
-A simple C++ student record management system with SQLite database integration.  
-**Upcoming features:** automatic database backup, a live statistics window, role-based access control, and a REST API server—all powered by multithreading.
+A simple C++ student record management system with SQLite database integration.
 
 ## Features
 
@@ -9,17 +8,12 @@ A simple C++ student record management system with SQLite database integration.
 - Persistent storage using SQLite
 - Console-based user interface
 - Error handling and input validation
-
-## Planned Features
-
 - **Automatic Backup:**  
-  The system will periodically create a backup copy of the database file in the background using a separate thread.
-- **Live Statistics Window:**  
-  A real-time statistics display (e.g., total students, average percentage) will update automatically in a separate thread, providing instant insights as data changes.
+  The system periodically creates a backup copy of the database file in the background using a separate thread.
 - **Role-Based Access Control:**  
-  Add user login (admin/teacher/student) with different permissions, demonstrating security and multi-user design.
+  User login (admin/teacher/student) with different permissions, demonstrating security and multi-user design.
 - **REST API Server:**  
-  Expose your database as a REST API (using C++ frameworks like Pistache or Crow), making your project accessible to web and mobile apps. The server will run on a separate thread.
+  Exposes the database as a REST API (using C++ frameworks like Pistache or Crow), making the project accessible to web and mobile apps. The server runs on a separate thread.
 
 ## How to Build
 
@@ -38,15 +32,15 @@ A simple C++ student record management system with SQLite database integration.
 - The program is designed for Windows (uses `conio.h` and `system("cls")`).
 - To run on another computer, copy:
   - The `.exe` file
-  - `sqlite3.dll` 
+  - `sqlite3.dll`
   - `students.db` (if you want to preserve existing data)
+
+---
 
 ## Roadmap
 
 - [x] SQLite database integration
-- [ ] Automatic backup (multithreaded)
-- [ ] Live statistics window (multithreaded)
-- [ ] Simulated tests for large datasets
+- [x] Automatic backup (multithreaded)
 - [ ] Role-based access control
 - [ ] REST API server
 
