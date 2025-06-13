@@ -1,19 +1,42 @@
 # Data Management System
 
-A simple C++ student record management system with SQLite database integration.
+A modern C++ student record management system with SQLite database integration and a built-in REST API server.
+
+---
 
 ## Features
 
-- Student record management (add, display, search, update, delete)
-- Persistent storage using SQLite
-- Console-based user interface
-- Error handling and input validation
-- **Automatic Backup:**  
-  The system periodically creates a backup copy of the database file in the background using a separate thread.
-- **Role-Based Access Control:**  
-  User login (admin/teacher/student) with different permissions, demonstrating security and multi-user design.
-- **REST API Server:**  
-  Exposes the database as a REST API, making the project accessible to web and mobile apps. The server runs on a separate thread.
+- **Student Record Management**
+  - Add, display, search, update, and delete student records.
+  - Each record includes: Roll Number, Name, Class, Total Marks, Obtained Marks, and Percentage (auto-calculated).
+- **Persistent Storage**
+  - All data is stored in a local SQLite database (`students.db`), ensuring durability and reliability.
+- **Console-Based User Interface**
+  - Intuitive, menu-driven interface for managing records.
+  - Designed for Windows (uses `conio.h` for key input and `system("cls")` for screen clearing).
+- **Error Handling & Input Validation**
+  - Handles invalid inputs and database errors gracefully.
+- **Automatic Database Backup**
+  - The system can create timestamped backup copies of the database file.
+  - Backups are performed in the background using a separate thread, ensuring the main application remains responsive.
+  - Backups are stored in a `backup/` directory with filenames like `backup_YYYYMMDD_HHMMSS.db`.
+- **REST API Server**
+  - Exposes student records via a RESTful API using [cpp-httplib](https://github.com/yhirose/cpp-httplib).
+  - The server runs on a separate thread, allowing simultaneous use of the console UI and API.
+  - **API Endpoints:**
+    - `GET /students`  
+      Returns a JSON array of all student records.
+    - `GET /students/{roll}`  
+      Returns a JSON object for the student with the specified roll number.
+    - `POST /students`  
+      Adds a new student record. Expects a JSON body:
+    - `DELETE /students/{roll}`  
+      Deletes the student record with the specified roll number.
+  - **Server Details:**
+    - Runs on `http://localhost:8080`
+    - Allows integration with web and mobile applications.
+
+---
 
 ## How to Build
 
@@ -25,7 +48,9 @@ A simple C++ student record management system with SQLite database integration.
 ## How to Run
 
 - Run `main.exe` from the command line.
-- Follow the on-screen menu to manage student records.
+- The REST API server will start automatically in the background.
+- Use the on-screen menu to manage student records via the console.
+- You can also interact with the REST API using tools like [Postman](https://www.postman.com/) or `curl`.
 
 ## Portability
 
@@ -37,13 +62,32 @@ A simple C++ student record management system with SQLite database integration.
 
 ---
 
-## Roadmap
+## Example REST API Usage
 
-- [x] SQLite database integration
-- [x] Automatic backup (multithreaded)
-- [ ] Role-based access control
-- [ ] REST API server
+- **Get all students:**
+  ```
+  GET http://localhost:8080/students
+  ```
+- **Get a student by roll:**
+  ```
+  GET http://localhost:8080/students/101
+  ```
+- **Add a student:**
+  ```
+  POST http://localhost:8080/students
+  Content-Type: application/json
+
+  {
+    "roll": "102",
+    "name": "Bob",
+    "class": "10B",
+    "total": 500,
+    "obtained": 420
+  }
+  ```
+- **Delete a student:**
+  ```
+  DELETE http://localhost:8080/students/102
+  ```
 
 ---
-
-*Work in progress. Contributions and suggestions welcome!*

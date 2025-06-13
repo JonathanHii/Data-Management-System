@@ -12,7 +12,8 @@
                 "${file}",
                 "-o",
                 "${workspaceFolder}\\${fileBasenameNoExtension}.exe",
-                "-lsqlite3"
+                "-lsqlite3",
+                "-lws2_32" 
             ],
             "options": {
                 "cwd": "${fileDirname}"

@@ -6,6 +6,9 @@
 #include <thread>
 #include <chrono>
 #include <filesystem>
+#include "../cpp-httplib/httplib.h"
+#include "../cpp-httplib/json.hpp"
+using json = nlohmann::json;
 
 using namespace std;
 
@@ -500,6 +503,109 @@ void runBackup(Database &db)
     }
 }
 
+void startRestApiServer(StudentService &service)
+{
+    httplib::Server svr;
+
+    // GET all students
+    svr.Get("/students", [&](const httplib::Request &, httplib::Response &res) {
+        std::ostringstream oss;
+        oss << "[";
+        bool first = true;
+
+        const char *sql = "SELECT roll, name, class, total, obtained, percentage FROM students;";
+        sqlite3_stmt *stmt;
+
+        if (sqlite3_prepare_v2(service.getDatabase().getConnection(), sql, -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            while (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                if (!first) oss << ",";
+                first = false;
+                oss << "{"
+                    << "\"roll\":\"" << sqlite3_column_text(stmt, 0) << "\","
+                    << "\"name\":\"" << sqlite3_column_text(stmt, 1) << "\","
+                    << "\"class\":\"" << sqlite3_column_text(stmt, 2) << "\","
+                    << "\"total\":" << sqlite3_column_double(stmt, 3) << ","
+                    << "\"obtained\":" << sqlite3_column_double(stmt, 4) << ","
+                    << "\"percentage\":" << sqlite3_column_double(stmt, 5)
+                    << "}";
+            }
+            sqlite3_finalize(stmt);
+        }
+
+        oss << "]";
+        res.set_content(oss.str(), "application/json");
+    });
+
+    // GET single student by roll
+    svr.Get(R"(/students/(\w+))", [&](const httplib::Request &req, httplib::Response &res) {
+        Student s;
+        std::string roll = req.matches[1];
+        if (service.search(roll, s))
+        {
+            std::ostringstream oss;
+            oss << "{"
+                << "\"roll\":\"" << s.roll << "\","
+                << "\"name\":\"" << s.name << "\","
+                << "\"class\":\"" << s.clas << "\","
+                << "\"total\":" << s.total << ","
+                << "\"obtained\":" << s.obtained << ","
+                << "\"percentage\":" << s.percentage
+                << "}";
+            res.set_content(oss.str(), "application/json");
+        }
+        else
+        {
+            res.status = 404;
+            res.set_content("{\"error\":\"Student not found\"}", "application/json");
+        }
+    });
+
+    // POST new student (expects JSON)
+    svr.Post("/students", [&](const httplib::Request &req, httplib::Response &res) {
+        try
+        {
+            auto body = req.body;
+            auto j = nlohmann::json::parse(body);
+            Student s(j["roll"], j["name"], j["class"], j["total"], j["obtained"]);
+
+            if (service.insert(s))
+            {
+                res.status = 201;
+                res.set_content("{\"status\":\"created\"}", "application/json");
+            }
+            else
+            {
+                res.status = 400;
+                res.set_content("{\"error\":\"Insert failed\"}", "application/json");
+            }
+        }
+        catch (...)
+        {
+            res.status = 400;
+            res.set_content("{\"error\":\"Invalid input\"}", "application/json");
+        }
+    });
+
+    // DELETE student
+    svr.Delete(R"(/students/(\w+))", [&](const httplib::Request &req, httplib::Response &res) {
+        std::string roll = req.matches[1];
+        if (service.remove(roll))
+        {
+            res.set_content("{\"status\":\"deleted\"}", "application/json");
+        }
+        else
+        {
+            res.status = 404;
+            res.set_content("{\"error\":\"Not found\"}", "application/json");
+        }
+    });
+
+    std::cout << "REST API Server running at http://localhost:8080" << std::endl;
+    svr.listen("0.0.0.0", 8080);
+}
+
 // Main Function
 //-------------------
 int main()
@@ -512,8 +618,12 @@ int main()
     db.createTable();
 
     StudentService service(db);
-    UI ui(service);
 
+    // Launch REST server on separate thread
+    std::thread restApiThread(startRestApiServer, std::ref(service));
+    restApiThread.detach(); // run independently
+
+    UI ui(service);
     ui.controlPanel();
 
     db.close();
