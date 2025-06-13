@@ -2,7 +2,7 @@
 
 A modern **C++ student record management system** featuring SQLite database integration and a built-in REST API server.
 
----
+
 
 ## Features
 
@@ -47,7 +47,7 @@ A modern **C++ student record management system** featuring SQLite database inte
   Runs on [`http://localhost:8080`](http://localhost:8080)  
   Allows integration with web and mobile applications.
 
----
+
 
 ## How to Build
 
@@ -56,7 +56,7 @@ A modern **C++ student record management system** featuring SQLite database inte
 
    > If using dynamic linking, ensure `sqlite3.dll` is in the same directory as the executable.
 
----
+
 
 ## How to Run
 
@@ -65,7 +65,7 @@ A modern **C++ student record management system** featuring SQLite database inte
 - Use the on-screen menu to manage student records via the console.
 - You can also interact with the REST API using tools like [Postman](https://www.postman.com/) or `curl`.
 
----
+
 
 ## Portability
 
@@ -75,7 +75,7 @@ A modern **C++ student record management system** featuring SQLite database inte
   - `sqlite3.dll`
   - `students.db` (if you want to preserve existing data)
 
----
+
 
 ## Example REST API Usage
 
@@ -104,4 +104,6 @@ Content-Type: application/json
 ```
 
 ### Delete a student
+```
+DELETE http://localhost:8080/students/102
 ```
